@@ -17,3 +17,4 @@ link_directories("${ONNXRUNTIME_ROOTDIR}/lib")
 
 add_subdirectory(fns_candy_style_transfer)
 add_subdirectory(model_explorer)
+add_subdirectory(yolo_face)
