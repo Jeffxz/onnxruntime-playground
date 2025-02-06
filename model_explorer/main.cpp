@@ -119,7 +119,7 @@ int main(int argc, ORTCHAR_T *argv[])
 
   // double-check the dimensions of the input tensor
   assert(input_tensors[0].IsTensor() && input_tensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
-  qDebug() << "\ninput_tensor shape: " << print_shape(input_tensors[0].GetTensorTypeAndShapeInfo().GetShape());
+  qDebug() << "input_tensor shape: " << print_shape(input_tensors[0].GetTensorTypeAndShapeInfo().GetShape());
 
   // pass data through model
   std::vector<const char *> input_names_char(input_names.size(), nullptr);
