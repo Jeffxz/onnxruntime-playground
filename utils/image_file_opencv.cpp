@@ -15,5 +15,7 @@ int read_image_file(const ORTCHAR_T* input_file, size_t* height, size_t* width, 
 
 int write_image_file(uint8_t* model_output_bytes, unsigned int height,
                      unsigned int width, const ORTCHAR_T* output_file){
+  cv::Mat image(height, width, CV_8UC3, (void*)model_output_bytes);
+  cv::imwrite(output_file, image);
   return 0;
 }
