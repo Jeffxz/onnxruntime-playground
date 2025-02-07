@@ -42,3 +42,26 @@ void chw_to_hwc(const float* input, size_t h, size_t w, uint8_t** output) {
   }
   *output = output_data;
 }
+
+void transpose(const float* input, size_t h, size_t w, float** output) {
+  size_t size = h * w;
+  float* output_data = (float*)malloc(size * sizeof(float));
+  for (size_t j = 0; j < h; j++) {
+    for (size_t i = 0; i < w; i++) {
+      output_data[i * h + j] = input[j * w + i];
+    }
+  }
+  *output = output_data;
+}
+
+void copy_partial_matrix(const float* input, size_t h, size_t w, float** output, int offset_start, int length) {
+  size_t size = h * length;
+  float* output_data = (float*)malloc(size * sizeof(float));
+  size_t offset_end = offset_start + length;
+  for (size_t j = 0; j < h; j++) {
+    for (size_t i = offset_start; i < offset_end; i++) {
+      output_data[j * length + i - offset_start] = input[j * w + i];
+    }
+  }
+  *output = output_data;
+}

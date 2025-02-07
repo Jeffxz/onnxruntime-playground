@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "onnxruntime_c_api.h"
 #include "image_file.h"
+#include "utils.h"
 
 #define tcscmp strcmp
 
@@ -32,6 +33,10 @@ int run_inference(OrtSession* session, const ORTCHAR_T* input_file) {
     return -1;
   }
 
+  for (int i = 0; i < model_input_ele_count; i++) {
+    model_input[i] = (model_input[i] - 127.5) / 128.0;
+  }
+
   OrtMemoryInfo* memory_info;
   ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &memory_info));
   const int64_t input_shape[] = {1, 3, (int64_t)input_width, (int64_t)input_height};
@@ -58,15 +63,24 @@ int run_inference(OrtSession* session, const ORTCHAR_T* input_file) {
   int ret = 0;
   float* output_tensor_data = NULL;
   ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(output_tensor, (void**)&output_tensor_data));
-  for (int j = 0; j < 1; j++) {
-    for (int i = 0; i < 50; i++) {
-      double f = output_tensor_data[j * 8400 + i];
-      qDebug() << "result [" << (j * 8400 + i) << "]" << f;
-    }
+  float* output_tensor_data_transpose = NULL;
+  transpose(output_tensor_data, 20, 8400, (float**)&output_tensor_data_transpose);
+  float* bounding_box_raw = NULL;
+  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &bounding_box_raw, 0, 4);
+  float* score_raw = NULL;
+  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &score_raw, 4, 1);
+  float* face_landmark_5_raw = NULL;
+  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &face_landmark_5_raw, 5, 15);
+  for (int i = 0; i < 15; i++) {
+    double f = face_landmark_5_raw[i];
+    qDebug() << "result [" << (i) << "]" << f;
   }
   g_ort->ReleaseValue(output_tensor);
   g_ort->ReleaseValue(input_tensor);
   free(model_input);
+  free(output_tensor_data_transpose);
+  free(bounding_box_raw);
+  free(face_landmark_5_raw);
   return ret;
 }
 

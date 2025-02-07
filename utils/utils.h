@@ -19,3 +19,7 @@ void hwc_to_chw(const uint8_t* input, size_t h, size_t w, float** output, size_t
  * \param output A byte array. should be freed by caller after use
  */
 void chw_to_hwc(const float* input, size_t h, size_t w, uint8_t** output);
+
+void transpose(const float* input, size_t h, size_t w, float** output);
+
+void copy_partial_matrix(const float* input, size_t h, size_t w, float** output, int offset_start, int length);
