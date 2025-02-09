@@ -60,7 +60,7 @@ void copy_partial_matrix(const float* input, size_t h, size_t w, float** output,
   size_t offset_end = offset_start + length;
   for (size_t j = 0; j < h; j++) {
     for (size_t i = offset_start; i < offset_end; i++) {
-      output_data[j * length + i - offset_start] = input[j * w + i];
+      output_data[j * length + i - offset_start] = (float)input[j * w + i];
     }
   }
   *output = output_data;

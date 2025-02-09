@@ -65,22 +65,63 @@ int run_inference(OrtSession* session, const ORTCHAR_T* input_file) {
   ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(output_tensor, (void**)&output_tensor_data));
   float* output_tensor_data_transpose = NULL;
   transpose(output_tensor_data, 20, 8400, (float**)&output_tensor_data_transpose);
-  float* bounding_box_raw = NULL;
-  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &bounding_box_raw, 0, 4);
   float* score_raw = NULL;
   copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &score_raw, 4, 1);
-  float* face_landmark_5_raw = NULL;
-  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &face_landmark_5_raw, 5, 15);
-  for (int i = 0; i < 15; i++) {
-    double f = face_landmark_5_raw[i];
-    qDebug() << "result [" << (i) << "]" << f;
+  int count = 0;
+  int index[8400] = {0};
+  for (int i = 0; i < 8400; i++) {
+    double f = score_raw[i];
+    if (f > 0.5) {
+      index[count] = i;
+      count++;
+    }
   }
+  int bounding_box_length = 4;
+  float* bounding_box_raw = NULL;
+  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &bounding_box_raw, 0, bounding_box_length);
+  float* bounding_box = (float*)malloc(count * bounding_box_length * sizeof(float));
+  for (int j = 0; j < count; j++) {
+    for (int i = 0; i < bounding_box_length; i++) {
+      bounding_box[j * bounding_box_length + i] = (float)bounding_box_raw[index[j] * bounding_box_length + i];
+    }
+  }
+  for (int j = 0; j < count; j++) {
+    float x1 = bounding_box[j * bounding_box_length + 0] - bounding_box[j * bounding_box_length + 2] / 2;
+    float y1 = bounding_box[j * bounding_box_length + 1] - bounding_box[j * bounding_box_length + 3] / 2;
+    float x2 = bounding_box[j * bounding_box_length + 0] + bounding_box[j * bounding_box_length + 2] / 2;
+    float y2 = bounding_box[j * bounding_box_length + 1] + bounding_box[j * bounding_box_length + 3] / 2;
+    bounding_box[j * bounding_box_length + 0] = x1;
+    bounding_box[j * bounding_box_length + 1] = y1;
+    bounding_box[j * bounding_box_length + 2] = x2;
+    bounding_box[j * bounding_box_length + 3] = y2;
+  }
+  /*
+  for (int i = 0; i < bounding_box_length; i++) {
+    qDebug() << bounding_box[9 * 4 + i];
+  }
+  */
+  int face_landmark_5_length = 15;
+  float* face_landmark_5_raw = NULL;
+  copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &face_landmark_5_raw, 5, face_landmark_5_length);
+  float* face_landmark_5 = (float*)malloc(count * face_landmark_5_length * sizeof(float));
+  for (int j = 0; j < count; j++) {
+    for (int i = 0; i < face_landmark_5_length; i++) {
+      face_landmark_5[j * face_landmark_5_length + i] = face_landmark_5_raw[index[j] * face_landmark_5_length + i];
+    }
+  }
+  /*
+  for (int i = 0; i < face_landmark_5_length; i++) {
+    qDebug() << face_landmark_5[i];
+  }
+  */
   g_ort->ReleaseValue(output_tensor);
   g_ort->ReleaseValue(input_tensor);
   free(model_input);
   free(output_tensor_data_transpose);
   free(bounding_box_raw);
+  free(bounding_box);
   free(face_landmark_5_raw);
+  free(face_landmark_5);
   return ret;
 }
 
