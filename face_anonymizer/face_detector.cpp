@@ -3,9 +3,9 @@
 int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
                          float *model_input, int input_width, int input_height,
                          int model_input_ele_count,
-                         float **output_bounding_boxes,
-                         float **output_face_scores,
-                         float **output_face_landmarks_5, int *output_row) {
+                         float **out_bounding_boxes,
+                         float **out_face_scores,
+                         float **out_face_landmarks_5, int *out_row) {
     for (int i = 0; i < model_input_ele_count; i++) {
         model_input[i] = (model_input[i] - 127.5) / 128.0;
     }
@@ -28,23 +28,23 @@ int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
     assert(is_tensor);
     g_ort->ReleaseMemoryInfo(memory_info);
     const char *input_names[] = {"input"};
-    const char *output_names[] = {"output"};
-    OrtValue *output_tensor = NULL;
+    const char *out_names[] = {"output"};
+    OrtValue *out_tensor = NULL;
     ORT_ABORT_ON_ERROR(g_ort->Run(session, NULL, input_names,
                                   (const OrtValue *const *)&input_tensor, 1,
-                                  output_names, 1, &output_tensor));
-    assert(output_tensor != NULL);
-    ORT_ABORT_ON_ERROR(g_ort->IsTensor(output_tensor, &is_tensor));
+                                  out_names, 1, &out_tensor));
+    assert(out_tensor != NULL);
+    ORT_ABORT_ON_ERROR(g_ort->IsTensor(out_tensor, &is_tensor));
     assert(is_tensor);
     int ret = 0;
-    float *output_tensor_data = NULL;
+    float *out_tensor_data = NULL;
     ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(
-        output_tensor, (void **)&output_tensor_data));
-    float *output_tensor_data_transpose = NULL;
-    transpose(output_tensor_data, 20, 8400,
-              (float **)&output_tensor_data_transpose);
+        out_tensor, (void **)&out_tensor_data));
+    float *out_tensor_data_transpose = NULL;
+    transpose(out_tensor_data, 20, 8400,
+              (float **)&out_tensor_data_transpose);
     float *score_raw = NULL;
-    copy_partial_matrix(output_tensor_data_transpose, 8400, 20, &score_raw, 4,
+    copy_partial_matrix(out_tensor_data_transpose, 8400, 20, &score_raw, 4,
                         1);
     int count = 0;
     int index[8400] = {0};
@@ -55,7 +55,7 @@ int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
             count++;
         }
     }
-    *output_row = count;
+    *out_row = count;
     float *face_scores = (float *)malloc(count * sizeof(float));
     for (int i = 0; i < count; i++) {
         face_scores[i] = (float)score_raw[index[i]];
@@ -68,7 +68,7 @@ int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
 
     int bounding_box_length = 4;
     float *bounding_box_raw = NULL;
-    copy_partial_matrix(output_tensor_data_transpose, 8400, 20,
+    copy_partial_matrix(out_tensor_data_transpose, 8400, 20,
                         &bounding_box_raw, 0, bounding_box_length);
     float *bounding_box =
         (float *)malloc(count * bounding_box_length * sizeof(float));
@@ -99,7 +99,7 @@ int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
     */
     int face_landmark_5_length = 15;
     float *face_landmark_5_raw = NULL;
-    copy_partial_matrix(output_tensor_data_transpose, 8400, 20,
+    copy_partial_matrix(out_tensor_data_transpose, 8400, 20,
                         &face_landmark_5_raw, 5, face_landmark_5_length);
     float *face_landmark_5 =
         (float *)malloc(count * face_landmark_5_length * sizeof(float));
@@ -114,20 +114,20 @@ int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
       qDebug() << face_landmark_5[i];
     }
     */
-    g_ort->ReleaseValue(output_tensor);
+    g_ort->ReleaseValue(out_tensor);
     g_ort->ReleaseValue(input_tensor);
-    *output_bounding_boxes = bounding_box;
-    *output_face_scores = face_scores;
-    *output_face_landmarks_5 = face_landmark_5;
+    *out_bounding_boxes = bounding_box;
+    *out_face_scores = face_scores;
+    *out_face_landmarks_5 = face_landmark_5;
     free(model_input);
-    free(output_tensor_data_transpose);
+    free(out_tensor_data_transpose);
     free(score_raw);
     free(bounding_box_raw);
     free(face_landmark_5_raw);
     return ret;
 }
 
-void verify_input_output_count(OrtSession *session) {
+void verify_input_out_count(OrtSession *session) {
     size_t count;
     ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, &count));
     assert(count == 1);
@@ -138,19 +138,19 @@ void verify_input_output_count(OrtSession *session) {
 void detect_faces(const OrtApi *g_ort, OrtEnv *env,
                   OrtSessionOptions *session_options, float *image_data,
                   int image_width, int image_height, int image_data_ele_count,
-                  float **output_bounding_boxes, float **output_face_scores,
-                  float **output_face_landmarks_5, int *output_row) {
+                  float **out_bounding_boxes, float **out_face_scores,
+                  float **out_face_landmarks_5, int *out_row) {
     OrtSession *session;
     int ret = 0;
     ORTCHAR_T *model_path = "./models/yoloface_8n.onnx";
 
     ORT_ABORT_ON_ERROR(
         g_ort->CreateSession(env, model_path, session_options, &session));
-    verify_input_output_count(session);
+    verify_input_out_count(session);
     ret = detect_with_yoloface(g_ort, session, image_data, image_width,
                                image_height, image_data_ele_count,
-                               output_bounding_boxes, output_face_scores,
-                               output_face_landmarks_5, output_row);
+                               out_bounding_boxes, out_face_scores,
+                               out_face_landmarks_5, out_row);
     g_ort->ReleaseSession(session);
     if (ret != 0) {
         fprintf(stderr, "fail\n");

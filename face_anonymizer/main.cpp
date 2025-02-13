@@ -5,6 +5,7 @@
 #include <QDebug>
 
 #include "face_detector.h"
+#include "face_analyzer.h"
 #include "image_file.h"
 #include "inference_manager.h"
 #include "utils.h"
@@ -116,6 +117,9 @@ int main(int argc, char *argv[]) {
                  << bounding_boxes[i * 4 + 3];
     }
     */
+    create_faces(g_ort, env, session_options, image_data, image_width,
+                 image_height, bounding_boxes, face_scores, face_landmarks_5,
+                 row);
 
     free(bounding_boxes);
     free(face_scores);
