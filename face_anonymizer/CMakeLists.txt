@@ -17,6 +17,7 @@ target_sources(face_anonymizer PRIVATE
   ./inference_manager.cpp
   ./face_analyzer.cpp
   ./face_detector.cpp
+  ./face_helper.cpp
   ../utils/image_file_opencv.cpp
   ../utils/utils.cpp
 )

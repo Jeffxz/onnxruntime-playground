@@ -91,11 +91,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    size_t input_width = 0;
-    size_t input_height = 0;
+    size_t image_width = 0;
+    size_t image_height = 0;
     float *image_data = NULL;
     size_t image_data_ele_count = 0;
-    if (read_image_file(input_file, &input_height, &input_width, &image_data,
+    if (read_image_file(input_file, &image_height, &image_width, &image_data,
                         &image_data_ele_count) != 0) {
         return -1;
     }
@@ -103,24 +103,20 @@ int main(int argc, char *argv[]) {
     float *bounding_boxes;
     float *face_scores;
     float *face_landmarks_5;
-    int bounding_boxes_row = 0;
-    int bounding_boxes_col = 0;
-    int face_scores_length = 0;
-    int face_landmarks_5_row = 0;
-    int face_landmarks_5_col = 0;
-    detect_faces(g_ort, env, session_options, image_data, input_width,
-                 input_height, image_data_ele_count, &bounding_boxes,
-                 &bounding_boxes_row, &bounding_boxes_col, &face_scores,
-                 &face_scores_length, &face_landmarks_5, &face_landmarks_5_row,
-                 &face_landmarks_5_col);
+    int row = 0;
+    detect_faces(g_ort, env, session_options, image_data, image_width,
+                 image_height, image_data_ele_count, &bounding_boxes,
+                 &face_scores, &face_landmarks_5, &row);
+
     /*
-    qDebug() << bounding_boxes_row << bounding_boxes_col << face_scores_length
-    << face_landmarks_5_row << face_landmarks_5_col; for (int i = 0; i <
-    bounding_boxes_row; i++) { qDebug() << bounding_boxes[i * bounding_boxes_col
-    + 0] << bounding_boxes[i * bounding_boxes_col + 1] << bounding_boxes[i *
-    bounding_boxes_col + 2] << bounding_boxes[i * bounding_boxes_col + 3];
+    for (int i = 0; i < row; i++) {
+        qDebug() << bounding_boxes[i * 4 + 0]
+                 << bounding_boxes[i * 4 + 1]
+                 << bounding_boxes[i * 4 + 2]
+                 << bounding_boxes[i * 4 + 3];
     }
     */
+
     free(bounding_boxes);
     free(face_scores);
     free(face_landmarks_5);

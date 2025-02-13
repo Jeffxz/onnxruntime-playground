@@ -1,12 +1,11 @@
 #include "face_detector.h"
 
-int detect_with_yoloface(
-    const OrtApi *g_ort, OrtSession *session, float *model_input,
-    int input_width, int input_height, int model_input_ele_count,
-    float **output_bounding_boxes, int *output_bounding_boxes_row,
-    int *output_bounding_boxes_col, float **output_face_scores,
-    int *output_face_scores_length, float **output_face_landmarks_5,
-    int *output_face_landmarks_5_row, int *output_face_landmarks5_col) {
+int detect_with_yoloface(const OrtApi *g_ort, OrtSession *session,
+                         float *model_input, int input_width, int input_height,
+                         int model_input_ele_count,
+                         float **output_bounding_boxes,
+                         float **output_face_scores,
+                         float **output_face_landmarks_5, int *output_row) {
     for (int i = 0; i < model_input_ele_count; i++) {
         model_input[i] = (model_input[i] - 127.5) / 128.0;
     }
@@ -56,9 +55,7 @@ int detect_with_yoloface(
             count++;
         }
     }
-    *output_bounding_boxes_row = count;
-    *output_face_scores_length = count;
-    *output_face_landmarks_5_row = count;
+    *output_row = count;
     float *face_scores = (float *)malloc(count * sizeof(float));
     for (int i = 0; i < count; i++) {
         face_scores[i] = (float)score_raw[index[i]];
@@ -70,7 +67,6 @@ int detect_with_yoloface(
     */
 
     int bounding_box_length = 4;
-    *output_bounding_boxes_col = bounding_box_length;
     float *bounding_box_raw = NULL;
     copy_partial_matrix(output_tensor_data_transpose, 8400, 20,
                         &bounding_box_raw, 0, bounding_box_length);
@@ -102,7 +98,6 @@ int detect_with_yoloface(
     }
     */
     int face_landmark_5_length = 15;
-    *output_face_landmarks5_col = face_landmark_5_length;
     float *face_landmark_5_raw = NULL;
     copy_partial_matrix(output_tensor_data_transpose, 8400, 20,
                         &face_landmark_5_raw, 5, face_landmark_5_length);
@@ -143,12 +138,8 @@ void verify_input_output_count(OrtSession *session) {
 void detect_faces(const OrtApi *g_ort, OrtEnv *env,
                   OrtSessionOptions *session_options, float *image_data,
                   int image_width, int image_height, int image_data_ele_count,
-                  float **output_bounding_boxes, int *output_bounding_boxes_row,
-                  int *output_bounding_boxes_col, float **output_face_scores,
-                  int *output_face_scores_length,
-                  float **output_face_landmarks_5,
-                  int *output_face_landmarks_5_row,
-                  int *output_face_landmarks5_col) {
+                  float **output_bounding_boxes, float **output_face_scores,
+                  float **output_face_landmarks_5, int *output_row) {
     OrtSession *session;
     int ret = 0;
     ORTCHAR_T *model_path = "./models/yoloface_8n.onnx";
@@ -156,12 +147,10 @@ void detect_faces(const OrtApi *g_ort, OrtEnv *env,
     ORT_ABORT_ON_ERROR(
         g_ort->CreateSession(env, model_path, session_options, &session));
     verify_input_output_count(session);
-    ret = detect_with_yoloface(
-        g_ort, session, image_data, image_width, image_height,
-        image_data_ele_count, output_bounding_boxes, output_bounding_boxes_row,
-        output_bounding_boxes_col, output_face_scores,
-        output_face_scores_length, output_face_landmarks_5,
-        output_face_landmarks_5_row, output_face_landmarks5_col);
+    ret = detect_with_yoloface(g_ort, session, image_data, image_width,
+                               image_height, image_data_ele_count,
+                               output_bounding_boxes, output_face_scores,
+                               output_face_landmarks_5, output_row);
     g_ort->ReleaseSession(session);
     if (ret != 0) {
         fprintf(stderr, "fail\n");
